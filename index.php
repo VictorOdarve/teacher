@@ -20,7 +20,7 @@ include 'includes/nav.php';
 
 <div class="card">
     <h1>Dashboard</h1>
-    
+
     <div class="stats">
         <div class="stat-card">
             <h3>Total Students</h3>

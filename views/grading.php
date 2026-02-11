@@ -68,8 +68,10 @@ $grades_query = "SELECT * FROM grades";
 $grades_stmt = $db->prepare($grades_query);
 $grades_stmt->execute();
 $saved_grades = [];
+$saved_totals = [];
 while ($grade_row = $grades_stmt->fetch(PDO::FETCH_ASSOC)) {
     $saved_grades[$grade_row['student_id']][$grade_row['quarter']][$grade_row['grade_type']] = json_decode($grade_row['scores'], true);
+    $saved_totals[$grade_row['student_id']][$grade_row['quarter']][$grade_row['grade_type']] = json_decode($grade_row['total_score'], true);
 }
 
 $page_title = "Grading";
@@ -160,17 +162,31 @@ include '../includes/nav.php';
                     </td>
                     <td id="scores_pt_<?php echo $row['id']; ?>" style="display: none;">
                         <div id="pt_container_<?php echo $row['id']; ?>">
-                            <?php for($i = 1; $i <= 10; $i++): ?>
-                                <input type="text" class="score-input" data-student="<?php echo $row['id']; ?>" data-type="pt" style="width: 40px; padding: 3px; margin: 2px;">
-                            <?php endfor; ?>
+                            <div>
+                                <?php for($i = 1; $i <= 10; $i++): ?>
+                                    <input type="text" class="score-input" data-student="<?php echo $row['id']; ?>" data-type="pt_total" placeholder="Total" style="background-color: #ffff99; width: 40px; padding: 3px; margin: 2px;">
+                                <?php endfor; ?>
+                            </div>
+                            <div>
+                                <?php for($i = 1; $i <= 10; $i++): ?>
+                                    <input type="text" class="score-input" data-student="<?php echo $row['id']; ?>" data-type="pt" placeholder="Score" style="width: 40px; padding: 3px; margin: 2px;">
+                                <?php endfor; ?>
+                            </div>
                         </div>
                         <button onclick="addTextbox('pt_container_<?php echo $row['id']; ?>', <?php echo $row['id']; ?>, 'pt')" style="padding: 2px 6px; font-size: 12px; margin-top: 5px;">+</button>
                     </td>
                     <td id="scores_as_<?php echo $row['id']; ?>" style="display: none;">
                         <div id="as_container_<?php echo $row['id']; ?>">
-                            <?php for($i = 1; $i <= 5; $i++): ?>
-                                <input type="text" class="score-input" data-student="<?php echo $row['id']; ?>" data-type="as" style="width: 40px; padding: 3px; margin: 2px;">
-                            <?php endfor; ?>
+                            <div>
+                                <?php for($i = 1; $i <= 5; $i++): ?>
+                                    <input type="text" class="score-input" data-student="<?php echo $row['id']; ?>" data-type="as_total" placeholder="Total" style="background-color: #ffff99; width: 40px; padding: 3px; margin: 2px;">
+                                <?php endfor; ?>
+                            </div>
+                            <div>
+                                <?php for($i = 1; $i <= 5; $i++): ?>
+                                    <input type="text" class="score-input" data-student="<?php echo $row['id']; ?>" data-type="as" placeholder="Score" style="width: 40px; padding: 3px; margin: 2px;">
+                                <?php endfor; ?>
+                            </div>
                         </div>
                         <button onclick="addTextbox('as_container_<?php echo $row['id']; ?>', <?php echo $row['id']; ?>, 'as')" style="padding: 2px 6px; font-size: 12px; margin-top: 5px;">+</button>
                     </td>
@@ -188,6 +204,7 @@ include '../includes/nav.php';
 
 <script>
 const savedGrades = <?php echo json_encode($saved_grades); ?>;
+const savedTotals = <?php echo json_encode($saved_totals); ?>;
 
 function applyFilters() {
     const grade = document.getElementById('grade_filter').value;
@@ -223,17 +240,32 @@ function loadSavedGrades(quarter) {
     document.querySelectorAll('.score-input').forEach(input => {
         const studentId = input.getAttribute('data-student');
         const type = input.getAttribute('data-type');
-        
-        if (savedGrades[studentId] && savedGrades[studentId][quarter] && savedGrades[studentId][quarter][type]) {
-            const scores = savedGrades[studentId][quarter][type];
-            const inputs = document.querySelectorAll(`input[data-student="${studentId}"][data-type="${type}"]`);
-            scores.forEach((score, index) => {
-                if (inputs[index]) {
-                    inputs[index].value = score;
-                }
-            });
+
+        if (type.includes('_total')) {
+            const baseType = type.replace('_total', '');
+            if (savedTotals[studentId] && savedTotals[studentId][quarter] && savedTotals[studentId][quarter][baseType]) {
+                const totals = savedTotals[studentId][quarter][baseType];
+                const inputs = document.querySelectorAll(`input[data-student="${studentId}"][data-type="${type}"]`);
+                totals.forEach((total, index) => {
+                    if (inputs[index]) {
+                        inputs[index].value = total;
+                    }
+                });
+            } else {
+                input.value = '';
+            }
         } else {
-            input.value = '';
+            if (savedGrades[studentId] && savedGrades[studentId][quarter] && savedGrades[studentId][quarter][type]) {
+                const scores = savedGrades[studentId][quarter][type];
+                const inputs = document.querySelectorAll(`input[data-student="${studentId}"][data-type="${type}"]`);
+                scores.forEach((score, index) => {
+                    if (inputs[index]) {
+                        inputs[index].value = score;
+                    }
+                });
+            } else {
+                input.value = '';
+            }
         }
     });
 }
@@ -253,30 +285,51 @@ function showScores(type) {
 
 function addTextbox(containerId, studentId, type) {
     const container = document.getElementById(containerId);
-    const newInput = document.createElement('input');
-    newInput.type = 'text';
-    newInput.className = 'score-input';
-    newInput.setAttribute('data-student', studentId);
-    newInput.setAttribute('data-type', type);
-    newInput.style.cssText = 'width: 40px; padding: 3px; margin: 2px;';
-    container.appendChild(newInput);
+    const totalDiv = container.children[0];
+    const scoreDiv = container.children[1];
+
+    // Add total input
+    const totalInput = document.createElement('input');
+    totalInput.type = 'text';
+    totalInput.className = 'score-input';
+    totalInput.setAttribute('data-student', studentId);
+    totalInput.setAttribute('data-type', type + '_total');
+    totalInput.placeholder = 'Total';
+    totalInput.style.cssText = 'width: 40px; padding: 3px; margin: 2px; background-color: #ffff99;';
+    totalDiv.appendChild(totalInput);
+
+    // Add score input
+    const scoreInput = document.createElement('input');
+    scoreInput.type = 'text';
+    scoreInput.className = 'score-input';
+    scoreInput.setAttribute('data-student', studentId);
+    scoreInput.setAttribute('data-type', type);
+    scoreInput.placeholder = 'Score';
+    scoreInput.style.cssText = 'width: 40px; padding: 3px; margin: 2px;';
+    scoreDiv.appendChild(scoreInput);
 }
 
 function saveGrades(studentId) {
     const quarter = document.getElementById('selected_quarter').value;
-    const types = ['ww', 'ww_total', 'pt', 'as'];
+    const types = ['ww', 'pt', 'as'];
     let savedCount = 0;
     let totalToSave = 0;
-    
+
     types.forEach(type => {
-        const inputs = document.querySelectorAll(`input[data-student="${studentId}"][data-type="${type}"]`);
+        const scoreInputs = document.querySelectorAll(`input[data-student="${studentId}"][data-type="${type}"]`);
+        const totalInputs = document.querySelectorAll(`input[data-student="${studentId}"][data-type="${type}_total"]`);
         const scores = [];
-        inputs.forEach(input => {
+        const totals = [];
+
+        scoreInputs.forEach(input => {
             scores.push(input.value);
         });
-        
-        // Check if there are any scores to save
-        if (scores.some(score => score.trim() !== '')) {
+        totalInputs.forEach(input => {
+            totals.push(input.value);
+        });
+
+        // Check if there are any scores or totals to save
+        if (scores.some(score => score.trim() !== '') || totals.some(total => total.trim() !== '')) {
             totalToSave++;
             const formData = new FormData();
             formData.append('action', 'save');
@@ -284,7 +337,8 @@ function saveGrades(studentId) {
             formData.append('quarter', quarter);
             formData.append('grade_type', type);
             formData.append('scores', JSON.stringify(scores));
-            
+            formData.append('total_score', JSON.stringify(totals));
+
             fetch('../controllers/grades_controller.php', {
                 method: 'POST',
                 body: formData
@@ -293,11 +347,15 @@ function saveGrades(studentId) {
             .then(data => {
                 if (data.success) {
                     savedCount++;
-                    // Update savedGrades object
+                    // Update savedGrades and savedTotals objects
                     if (!savedGrades[studentId]) savedGrades[studentId] = {};
                     if (!savedGrades[studentId][quarter]) savedGrades[studentId][quarter] = {};
                     savedGrades[studentId][quarter][type] = scores;
-                    
+
+                    if (!savedTotals[studentId]) savedTotals[studentId] = {};
+                    if (!savedTotals[studentId][quarter]) savedTotals[studentId][quarter] = {};
+                    savedTotals[studentId][quarter][type] = totals;
+
                     if (savedCount === totalToSave) {
                         alert('Grades saved successfully!');
                     }
@@ -312,7 +370,7 @@ function saveGrades(studentId) {
             });
         }
     });
-    
+
     if (totalToSave === 0) {
         alert('Please enter some scores before saving.');
     }

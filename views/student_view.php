@@ -69,6 +69,15 @@ include '../includes/nav.php';
 
         <h2 style="margin-top: 40px;">Grades</h2>
         <?php if (count($grades_records) > 0): ?>
+            <?php
+            // Group grades by quarter
+            $grouped_grades = [];
+            foreach ($grades_records as $record) {
+                $quarter = $record['quarter'];
+                $type = $record['grade_type'];
+                $grouped_grades[$quarter][$type] = $record;
+            }
+            ?>
             <table>
                 <thead>
                     <tr>
@@ -76,41 +85,66 @@ include '../includes/nav.php';
                         <th>Type</th>
                         <th>Scores</th>
                         <th>Total</th>
+                        <th>Overall</th>
                         <th>Calculated</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($grades_records as $record): ?>
-                    <tr>
-                        <td>Quarter <?php echo $record['quarter']; ?></td>
-                        <td>
-                            <?php
-                            if ($record['grade_type'] == 'ww') echo 'Written Works';
-                            elseif ($record['grade_type'] == 'ww_total') echo 'Written Works (Total)';
-                            elseif ($record['grade_type'] == 'pt') echo 'Performance Tasks';
-                            else echo 'Assessment';
-                            ?>
-                        </td>
-                        <td><?php echo implode(', ', json_decode($record['scores'], true)); ?></td>
-                        <td><?php echo array_sum(json_decode($record['scores'], true)); ?></td>
-                        <td>
-                            <?php
-                            $total = array_sum(json_decode($record['scores'], true));
-                            if ($record['grade_type'] == 'ww') {
-                                $calculated = $total / 5;
-                                echo number_format($calculated, 2);
-                            } elseif ($record['grade_type'] == 'ww_total') {
-                                echo '-';
-                            } elseif ($record['grade_type'] == 'pt') {
-                                $calculated = $total / 3;
-                                echo number_format($calculated, 2);
-                            } else {
-                                $calculated = $total / 2;
-                                echo number_format($calculated, 2);
-                            }
-                            ?>
-                        </td>
-                    </tr>
+                    <?php foreach ($grouped_grades as $quarter => $types): ?>
+                        <?php
+                        $grade_types = ['ww', 'pt', 'as'];
+                        $first = true;
+                        foreach ($grade_types as $type):
+                            $record = isset($types[$type]) ? $types[$type] : null;
+                        ?>
+                        <tr>
+                            <?php if ($first): ?>
+                                <td rowspan="<?php echo count($grade_types); ?>">Quarter <?php echo $quarter; ?></td>
+                                <?php $first = false; ?>
+                            <?php endif; ?>
+                            <td>
+                                <?php
+                                if ($type == 'ww') echo 'Written Works';
+                                elseif ($type == 'pt') echo 'Performance Tasks';
+                                else echo 'Assessment';
+                                ?>
+                            </td>
+                            <td><?php echo $record ? implode(' | ', array_filter(json_decode($record['scores'], true), function($v) { return !empty($v); })) : ''; ?></td>
+                            <td><?php echo $record && $record['total_score'] ? implode(' | ', array_filter(json_decode($record['total_score'], true), function($v) { return !empty($v); })) : ''; ?></td>
+                            <td>
+                                <?php
+                                if ($record) {
+                                    $scores_sum = array_sum(json_decode($record['scores'], true));
+                                    $totals_sum = $record['total_score'] ? array_sum(json_decode($record['total_score'], true)) : 0;
+                                    if ($totals_sum > 0) {
+                                        echo $scores_sum . '/' . $totals_sum;
+                                    } else {
+                                        echo '-';
+                                    }
+                                } else {
+                                    echo '-';
+                                }
+                                ?>
+                            </td>
+                            <td>
+                                <?php
+                                if ($record && isset($totals_sum) && $totals_sum > 0) {
+                                    $percentage = ($scores_sum / $totals_sum) * 100;
+                                    echo round($percentage, 2) . '%';
+                                } else {
+                                    echo '-';
+                                }
+                                ?>
+                            </td>
+                            <?php if ($type == 'ww'): ?>
+                                <td rowspan="<?php echo count($grade_types); ?>">
+                                    <button class="btn" onclick="calculateAverage(<?php echo $quarter; ?>)">Calculate</button>
+                                    <div id="quarter-grade-<?php echo $quarter; ?>" style="margin-top: 10px; font-weight: bold;"></div>
+                                </td>
+                            <?php endif; ?>
+                        </tr>
+                        <?php endforeach; ?>
                     <?php endforeach; ?>
                 </tbody>
             </table>
@@ -120,11 +154,56 @@ include '../includes/nav.php';
 
         <div style="margin-top: 20px;">
             <a href="students.php" class="btn">Back to Students</a>
+            <button class="btn" style="float: right;" onclick="generateFinalGrade()">Generate Final Grade</button>
+        </div>
+
+        <!-- Final Grade Modal -->
+        <div id="final-grade-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+            <input type="hidden" id="modal-student-id" value="<?php echo $student_id; ?>">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 10px; width: 90%; max-width: 900px; font-family: monospace; font-size: 16px;">
+                <h2 style="text-align: center;">FINAL GRADE PANEL</h2>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr><td>Student Name :</td><td><?php echo htmlspecialchars($student['first_name'] . ' ' . $student['last_name']); ?></td></tr>
+                    <tr><td>Grade Level :</td><td><?php echo htmlspecialchars($student['grade_level'] . ' – ' . $student['section']); ?></td></tr>
+                    <tr><td>Subject :</td><td>Mathematics</td></tr>
+                    <tr><td>School Year :</td><td>2025 – 2026</td></tr>
+                </table>
+                <h3 style="text-align: center;">QUARTER GRADES</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <th>Quarter 1</th>
+                        <th>Quarter 2</th>
+                        <th>Quarter 3</th>
+                        <th>Quarter 4</th>
+                    </tr>
+                    <tr>
+                        <td id="q1-grade">-</td>
+                        <td id="q2-grade">-</td>
+                        <td id="q3-grade">-</td>
+                        <td id="q4-grade">-</td>
+                    </tr>
+                </table>
+                <div style="margin-top: 20px;">
+                    <strong>Computation:</strong><br>
+                    (Q1 + Q2 + Q3 + Q4) / 4<br><br>
+                    <strong>Raw Final Grade:</strong> <span id="raw-final" style="font-size: 28px; font-weight: bold;">-</span><br>
+                    <strong>Rounded Final Grade:</strong> <span id="rounded-final" style="font-size: 28px; font-weight: bold;">-</span><br><br>
+                    <strong>Remarks:</strong> <span id="remarks">-</span>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn" onclick="computeFinalGrade()">Compute Final Grade</button>
+                    <button class="btn" onclick="finalizeGrade()">Finalize</button>
+                    <button class="btn" onclick="editGrade()">Edit</button>
+                </div>
+                <button style="position: absolute; top: 10px; right: 10px;" onclick="closeModal()">X</button>
+            </div>
         </div>
     <?php else: ?>
         <p>Student not found.</p>
         <a href="students.php" class="btn">Back to Students</a>
     <?php endif; ?>
 </div>
+
+<script src="../assets/js/script.js"></script>
 
 <?php include '../includes/footer.php'; ?>

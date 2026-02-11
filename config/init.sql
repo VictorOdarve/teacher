@@ -66,8 +66,24 @@ CREATE TABLE IF NOT EXISTS grades (
     student_id INT NOT NULL,
     quarter INT NOT NULL,
     grade_type ENUM('ww', 'pt', 'as') NOT NULL,
-    scores TEXT NOT NULL,
+    scores TEXT,
+    total_score TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (student_id) REFERENCES class_students(id) ON DELETE CASCADE,
     UNIQUE KEY unique_grade (student_id, quarter, grade_type)
+);
+
+CREATE TABLE IF NOT EXISTS final_grades (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    q1_grade DECIMAL(5,2) NOT NULL,
+    q2_grade DECIMAL(5,2) NOT NULL,
+    q3_grade DECIMAL(5,2) NOT NULL,
+    q4_grade DECIMAL(5,2) NOT NULL,
+    raw_final_grade DECIMAL(5,2) NOT NULL,
+    rounded_final_grade INT NOT NULL,
+    remarks VARCHAR(50) NOT NULL,
+    finalized_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES class_students(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_final_grade (student_id)
 );
