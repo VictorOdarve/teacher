@@ -23,38 +23,49 @@ $section_stmt = $db->prepare($section_query);
 $section_stmt->execute();
 $sections = $section_stmt->fetchAll(PDO::FETCH_COLUMN);
 
-// Get students based on filters
+// Get students based on filters (unique per student_id)
 if ($grade_filter && $section_filter) {
-    $query = "SELECT DISTINCT cs.*, c.grade_level, c.section FROM class_students cs 
+    $query = "SELECT cs.*, c.grade_level, c.section FROM class_students cs 
               JOIN classes c ON cs.class_id = c.id 
-              WHERE c.grade_level = :grade AND c.section = :section 
-              ORDER BY cs.last_name, cs.first_name";
+              INNER JOIN (SELECT cs2.student_id, MIN(cs2.id) as min_id FROM class_students cs2
+                          JOIN classes c2 ON cs2.class_id = c2.id
+                          WHERE c2.grade_level = :grade AND c2.section = :section
+                          GROUP BY cs2.student_id) sub ON cs.student_id = sub.student_id AND cs.id = sub.min_id
+              ORDER BY cs.last_name ASC, cs.first_name ASC";
     $stmt = $db->prepare($query);
     $stmt->bindParam(":grade", $grade_filter);
     $stmt->bindParam(":section", $section_filter);
     $stmt->execute();
     $students = $stmt;
 } elseif ($grade_filter) {
-    $query = "SELECT DISTINCT cs.*, c.grade_level, c.section FROM class_students cs 
+    $query = "SELECT cs.*, c.grade_level, c.section FROM class_students cs 
               JOIN classes c ON cs.class_id = c.id 
-              WHERE c.grade_level = :grade 
+              INNER JOIN (SELECT cs2.student_id, MIN(cs2.id) as min_id FROM class_students cs2 
+                          JOIN classes c2 ON cs2.class_id = c2.id 
+                          WHERE c2.grade_level = :grade 
+                          GROUP BY cs2.student_id) sub ON cs.student_id = sub.student_id AND cs.id = sub.min_id 
               ORDER BY cs.last_name, cs.first_name";
     $stmt = $db->prepare($query);
     $stmt->bindParam(":grade", $grade_filter);
     $stmt->execute();
     $students = $stmt;
 } elseif ($section_filter) {
-    $query = "SELECT DISTINCT cs.*, c.grade_level, c.section FROM class_students cs 
+    $query = "SELECT cs.*, c.grade_level, c.section FROM class_students cs 
               JOIN classes c ON cs.class_id = c.id 
-              WHERE c.section = :section 
+              INNER JOIN (SELECT cs2.student_id, MIN(cs2.id) as min_id FROM class_students cs2 
+                          JOIN classes c2 ON cs2.class_id = c2.id 
+                          WHERE c2.section = :section 
+                          GROUP BY cs2.student_id) sub ON cs.student_id = sub.student_id AND cs.id = sub.min_id 
               ORDER BY cs.last_name, cs.first_name";
     $stmt = $db->prepare($query);
     $stmt->bindParam(":section", $section_filter);
     $stmt->execute();
     $students = $stmt;
 } else {
-    $query = "SELECT DISTINCT cs.*, c.grade_level, c.section FROM class_students cs 
+    $query = "SELECT cs.*, c.grade_level, c.section FROM class_students cs 
               JOIN classes c ON cs.class_id = c.id 
+              INNER JOIN (SELECT student_id, MIN(id) as min_id FROM class_students GROUP BY student_id) sub 
+              ON cs.student_id = sub.student_id AND cs.id = sub.min_id 
               ORDER BY cs.last_name, cs.first_name";
     $stmt = $db->prepare($query);
     $stmt->execute();
@@ -136,7 +147,7 @@ include '../includes/nav.php';
                 ?>
                 <tr>
                     <td><?php echo htmlspecialchars($row['student_id']); ?></td>
-                    <td><?php echo htmlspecialchars($row['first_name'] . ' ' . $row['last_name']); ?></td>
+                    <td><?php echo htmlspecialchars($row['last_name'] . ', ' . $row['first_name']); ?></td>
                     <td><?php echo htmlspecialchars($row['grade_level']); ?></td>
                     <td><?php echo htmlspecialchars($row['section']); ?></td>
                     <td>

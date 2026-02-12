@@ -18,8 +18,12 @@ $stmt->bindParam(":class_id", $class_id);
 $stmt->execute();
 $schedules = $stmt;
 
-// Get students
-$query = "SELECT * FROM class_students WHERE class_id = :class_id ORDER BY last_name, first_name";
+// Get students (unique per student_id to avoid duplicates)
+$query = "SELECT cs.* FROM class_students cs
+          INNER JOIN (SELECT student_id, MIN(id) as min_id FROM class_students WHERE class_id = :class_id GROUP BY student_id) sub
+          ON cs.student_id = sub.student_id AND cs.id = sub.min_id
+          WHERE cs.class_id = :class_id
+          ORDER BY cs.last_name, cs.first_name";
 $stmt = $db->prepare($query);
 $stmt->bindParam(":class_id", $class_id);
 $stmt->execute();
@@ -126,6 +130,7 @@ include '../includes/nav.php';
                     <th>Last Name</th>
                     <th>First Name</th>
                     <th>Middle Name</th>
+                    <th>Gender</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -140,6 +145,13 @@ include '../includes/nav.php';
                         <td><input type="text" name="last_name" value="<?php echo htmlspecialchars($row['last_name']); ?>" onchange="document.getElementById('student_form_<?php echo $row['id']; ?>').submit()"></td>
                         <td><input type="text" name="first_name" value="<?php echo htmlspecialchars($row['first_name']); ?>" onchange="document.getElementById('student_form_<?php echo $row['id']; ?>').submit()"></td>
                         <td><input type="text" name="middle_name" value="<?php echo htmlspecialchars($row['middle_name']); ?>" onchange="document.getElementById('student_form_<?php echo $row['id']; ?>').submit()"></td>
+                        <td>
+                            <select name="gender" onchange="document.getElementById('student_form_<?php echo $row['id']; ?>').submit()">
+                                <option value="Male" <?php echo $row['gender'] == 'Male' ? 'selected' : ''; ?>>Male</option>
+                                <option value="Female" <?php echo $row['gender'] == 'Female' ? 'selected' : ''; ?>>Female</option>
+                                <option value="Other" <?php echo $row['gender'] == 'Other' ? 'selected' : ''; ?>>Other</option>
+                            </select>
+                        </td>
                     </form>
                     <td>
                         <form action="../controllers/class_student_controller.php" method="POST" style="display:inline;">

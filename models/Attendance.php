@@ -18,7 +18,7 @@ class Attendance {
     }
 
     public function getByDate($date) {
-        $query = "SELECT a.*, s.student_id, s.name FROM " . $this->table . " a JOIN students s ON a.student_id = s.id WHERE a.date = :date";
+        $query = "SELECT a.*, cs.student_id, CONCAT(cs.first_name, ' ', cs.last_name) as name FROM " . $this->table . " a JOIN class_students cs ON a.student_id = cs.id WHERE a.date = :date";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":date", $date);
         $stmt->execute();
@@ -42,10 +42,10 @@ class Attendance {
     }
 
     public function getReport($start_date, $end_date, $section = null, $subject = null) {
-        $query = "SELECT cs.id, cs.student_id, CONCAT(cs.first_name, ' ', cs.last_name) as name,
+        $query = "SELECT cs.id, cs.student_id, CONCAT(cs.last_name, ', ', cs.first_name) as name,
                   SUM(CASE WHEN a.status = 'present' THEN 1 ELSE 0 END) as present_count,
                   SUM(CASE WHEN a.status = 'absent' THEN 1 ELSE 0 END) as absent_count,
-                  SUM(CASE WHEN a.status = 'tardy' THEN 1 ELSE 0 END) as tardy_count
+                  SUM(CASE WHEN a.status = 'late' THEN 1 ELSE 0 END) as late_count
                   FROM class_students cs
                   LEFT JOIN " . $this->table . " a ON cs.id = a.student_id AND a.date BETWEEN :start_date AND :end_date
                   JOIN classes c ON cs.class_id = c.id";
@@ -59,7 +59,7 @@ class Attendance {
         if ($conditions) {
             $query .= " WHERE " . implode(" AND ", $conditions);
         }
-        $query .= " GROUP BY cs.id ORDER BY cs.last_name, cs.first_name";
+        $query .= " GROUP BY cs.student_id ORDER BY cs.last_name, cs.first_name";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":start_date", $start_date);
         $stmt->bindParam(":end_date", $end_date);

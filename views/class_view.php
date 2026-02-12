@@ -76,6 +76,7 @@ include '../includes/nav.php';
                     <th>Last Name</th>
                     <th>First Name</th>
                     <th>Middle Name</th>
+                    <th>Gender</th>
                 </tr>
             </thead>
             <tbody>
@@ -85,6 +86,7 @@ include '../includes/nav.php';
                     <td><?php echo htmlspecialchars($row['last_name']); ?></td>
                     <td><?php echo htmlspecialchars($row['first_name']); ?></td>
                     <td><?php echo htmlspecialchars($row['middle_name']); ?></td>
+                    <td><?php echo htmlspecialchars($row['gender']); ?></td>
                 </tr>
                 <?php endwhile; ?>
             </tbody>

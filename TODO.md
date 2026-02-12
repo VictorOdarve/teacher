@@ -1,8 +1,6 @@
-# Teacher Dashboard Implementation TODO
+# TODO: Update Student Name Display to "Lastname, Firstname" Format
 
-- [x] Add methods to models/ClassModel.php: getClassesWithSchedules(), getStudentsCount($class_id), getRecentActivities($class_id, $limit)
-- [x] Add methods to models/Attendance.php: getAttendanceStatsForClass($class_id, $date)
-- [x] Create controllers/teacher_dashboard_controller.php to handle logic and data fetching
-- [x] Create views/teacher_dashboard.php with HTML structure for Class Selector, Today's Schedule, Class Quick Stats, Recent Activities, Students Requiring Attention
-- [x] Implement logic for Students Requiring Attention (3+ absences, failing grades, missing work)
-- [x] Test the dashboard by accessing the new view
+- [x] Edit views/students.php: Change name display from "first_name last_name" to "last_name, first_name"
+- [x] Edit views/grading.php: Change name display from "first_name last_name" to "last_name, first_name"
+- [x] Edit views/history.php: Change name display from "first_name last_name" to "last_name, first_name"
+- [ ] Verify changes in browser

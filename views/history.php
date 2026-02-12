@@ -110,7 +110,7 @@ include '../includes/nav.php';
                 <tr>
                     <td><?php echo date('M d, Y', strtotime($row['date'])); ?></td>
                     <td><?php echo htmlspecialchars($row['student_number']); ?></td>
-                    <td><?php echo htmlspecialchars($row['first_name'] . ' ' . $row['last_name']); ?></td>
+                    <td><?php echo htmlspecialchars($row['last_name'] . ', ' . $row['first_name']); ?></td>
                     <td><?php echo htmlspecialchars($row['grade_level']); ?></td>
                     <td><?php echo htmlspecialchars($row['section']); ?></td>
                     <td>

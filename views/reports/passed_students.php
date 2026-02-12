@@ -9,7 +9,7 @@ $attendance = new Attendance($db);
 $section = isset($_GET['section']) ? $_GET['section'] : '';
 $subject = isset($_GET['subject']) ? $_GET['subject'] : '';
 
-$query = "SELECT fg.student_id, cs.first_name, cs.last_name, c.grade_level, c.section, c.subject, fg.rounded_final_grade, fg.remarks
+$query = "SELECT DISTINCT fg.student_id, cs.first_name, cs.last_name, c.grade_level, c.section, c.subject, fg.rounded_final_grade, fg.remarks
           FROM final_grades fg
           JOIN class_students cs ON fg.student_id = cs.id
           JOIN classes c ON cs.class_id = c.id
@@ -76,8 +76,7 @@ if ($students) {
             $attendance_percent = $total_days > 0 ? round(($present_days / $total_days) * 100, 2) : 0;
 
             // Format student name
-            $first_initial = substr($student['first_name'], 0, 1) . '.';
-            $student_name = $first_initial . ' ' . $student['last_name'];
+            $student_name = $student['last_name'] . ', ' . $student['first_name'];
             ?>
             <tr>
                 <td><?php echo htmlspecialchars($student_name); ?></td>

@@ -170,7 +170,17 @@ include '../includes/nav.php';
                 <label>Middle Name:</label>
                 <input type="text" name="middle_name">
             </div>
-            
+
+            <div class="form-group">
+                <label>Gender:</label>
+                <select name="gender" required>
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
             <div class="form-group">
                 <label>Student ID:</label>
                 <input type="text" name="student_id" required>
