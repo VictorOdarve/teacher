@@ -2,16 +2,27 @@
 require_once 'config/database.php';
 require_once 'models/Student.php';
 require_once 'models/Attendance.php';
+require_once 'models/ClassModel.php';
 
 $database = new Database();
 $db = $database->getConnection();
 
 $student = new Student($db);
 $attendance = new Attendance($db);
+$class_model = new ClassModel($db);
 
 $total_students = $student->getAll()->rowCount();
+$total_classes = $class_model->getAll()->rowCount();
 $today = date('Y-m-d');
 $today_attendance = $attendance->getByDate($today)->rowCount();
+
+// Get today's absent count
+$query = "SELECT COUNT(*) as count FROM attendance WHERE date = :date AND status = 'absent'";
+$stmt = $db->prepare($query);
+$stmt->bindParam(":date", $today);
+$stmt->execute();
+$row = $stmt->fetch(PDO::FETCH_ASSOC);
+$today_absent = $row['count'];
 
 $page_title = "Dashboard - Attendance System";
 include 'includes/header.php';
@@ -27,8 +38,16 @@ include 'includes/nav.php';
             <div class="number"><?php echo $total_students; ?></div>
         </div>
         <div class="stat-card">
+            <h3>Total Classes</h3>
+            <div class="number"><?php echo $total_classes; ?></div>
+        </div>
+        <div class="stat-card">
             <h3>Today's Attendance</h3>
             <div class="number"><?php echo $today_attendance; ?></div>
+        </div>
+        <div class="stat-card">
+            <h3>Today's Absent</h3>
+            <div class="number"><?php echo $today_absent; ?></div>
         </div>
         <div class="stat-card">
             <h3>Date</h3>

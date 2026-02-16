@@ -89,5 +89,13 @@ class Attendance {
         }
         return $stats;
     }
+
+    public function getTotalAbsent() {
+        $query = "SELECT COUNT(*) as count FROM " . $this->table . " WHERE status = 'absent'";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row['count'];
+    }
 }
 ?>

@@ -1,0 +1,97 @@
+body.login-body {
+    background: #d3d3d3;
+}
+
+.login-body .auth-page {
+    min-height: 100vh;
+    position: relative;
+    overflow: hidden;
+}
+
+.login-body .auth-page::before {
+    content: "";
+    position: absolute;
+    width: 420px;
+    height: 420px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.02) 68%);
+    top: -120px;
+    right: -80px;
+    animation: loginOrb 12s ease-in-out infinite;
+}
+
+.login-body .auth-page::after {
+    content: "";
+    position: absolute;
+    width: 280px;
+    height: 280px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(144, 228, 255, 0.42) 0%, rgba(144, 228, 255, 0.02) 70%);
+    bottom: -80px;
+    left: -60px;
+    animation: loginOrb 10s ease-in-out infinite reverse;
+}
+
+.login-body .auth-card {
+    width: 100%;
+    max-width: 430px;
+    background: #ffffff;
+    border: 1px solid #d0d0d0;
+    border-radius: 22px;
+    padding: 34px;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    animation: loginCardFloat 6s ease-in-out infinite;
+    z-index: 2;
+}
+
+.login-body .auth-card h1 {
+    color: #555555;
+    letter-spacing: 0.4px;
+    margin-bottom: 10px;
+}
+
+.login-body .auth-subtitle,
+.login-body .auth-hint,
+.login-body .auth-card label {
+    color: #666666;
+}
+
+.login-body .auth-card .form-group {
+    margin: 16px 0;
+}
+
+.login-body .auth-card input {
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+}
+
+.login-body .auth-card .btn.auth-btn {
+    width: 100%;
+    margin-top: 8px;
+    border-radius: 12px;
+    padding: 12px 18px;
+    box-shadow: 0 10px 25px rgba(27, 65, 192, 0.5);
+}
+
+@keyframes loginCardFloat {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes loginOrb {
+    0%, 100% {
+        transform: translate(0, 0);
+    }
+    50% {
+        transform: translate(-12px, 14px);
+    }
+}
+
+

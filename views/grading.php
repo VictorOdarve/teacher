@@ -320,7 +320,69 @@ function addTextbox(containerId, studentId, type) {
     scoreDiv.appendChild(scoreInput);
 }
 
+function validateScores(studentId) {
+    const types = ['ww', 'pt', 'as'];
+    let errors = [];
+    let isValid = true;
+
+    // Clear previous error styles
+    document.querySelectorAll('.score-input').forEach(input => {
+        input.style.border = '';
+        input.title = '';
+    });
+
+    types.forEach(type => {
+        const scoreInputs = document.querySelectorAll(`input[data-student="${studentId}"][data-type="${type}"]`);
+        const totalInputs = document.querySelectorAll(`input[data-student="${studentId}"][data-type="${type}_total"]`);
+
+        scoreInputs.forEach((scoreInput, index) => {
+            const scoreValue = scoreInput.value.trim();
+            const totalInput = totalInputs[index];
+            const totalValue = totalInput ? totalInput.value.trim() : '';
+
+            // Only validate if both score and total have values
+            if (scoreValue !== '' && totalValue !== '') {
+                const score = parseFloat(scoreValue);
+                const total = parseFloat(totalValue);
+
+                // Check if score is less than 0
+                if (score < 0) {
+                    scoreInput.style.border = '2px solid red';
+                    scoreInput.title = 'Score cannot be less than 0';
+                    errors.push(`Score (${score}) cannot be less than 0 (Total: ${total})`);
+                    isValid = false;
+                }
+                // Check if score is greater than total
+                else if (score > total) {
+                    scoreInput.style.border = '2px solid red';
+                    scoreInput.title = `Score (${score}) cannot be greater than Total (${total})`;
+                    errors.push(`Score (${score}) cannot be greater than Total (${total})`);
+                    isValid = false;
+                }
+            }
+            // Check if score is entered but total is empty
+            else if (scoreValue !== '' && totalValue === '') {
+                scoreInput.style.border = '2px solid red';
+                scoreInput.title = 'Please enter a Total value first';
+                errors.push('Please enter Total value for each Score');
+                isValid = false;
+            }
+        });
+    });
+
+    if (!isValid) {
+        alert('Validation Error:\n' + errors.join('\n'));
+    }
+
+    return isValid;
+}
+
 function saveGrades(studentId) {
+    // First validate the scores
+    if (!validateScores(studentId)) {
+        return; // Stop if validation fails
+    }
+
     const quarter = document.getElementById('selected_quarter').value;
     const types = ['ww', 'pt', 'as'];
     let savedCount = 0;

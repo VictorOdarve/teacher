@@ -6,13 +6,14 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #d3d3d3;
     line-height: 1.6;
 }
 
 .container {
     display: flex;
     min-height: 100vh;
+    background: #d3d3d3;
 }
 
 .sidebar {
@@ -51,6 +52,7 @@ body {
     flex: 1;
     padding: 40px;
     max-width: 100%;
+    background: #d3d3d3;
 }
 
 .card {
@@ -459,3 +461,106 @@ footer {
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+.auth-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.auth-page::before,
+.auth-page::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(2px);
+    animation: authOrbFloat 10s ease-in-out infinite;
+    z-index: 0;
+}
+
+.auth-page::before {
+    width: 260px;
+    height: 260px;
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.08));
+    top: 10%;
+    left: 8%;
+}
+
+.auth-page::after {
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(circle at 30% 30%, rgba(135, 206, 250, 0.45), rgba(135, 206, 250, 0.08));
+    right: 7%;
+    bottom: 8%;
+    animation-delay: -4s;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 420px;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    border-radius: 20px;
+    box-shadow: 0 24px 55px rgba(25, 33, 78, 0.3);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 32px;
+    position: relative;
+    z-index: 1;
+    animation: authCardFloat 6s ease-in-out infinite;
+}
+
+.auth-card h1 {
+    color: #fff;
+    text-shadow: 0 2px 15px rgba(0, 0, 0, 0.15);
+}
+
+.auth-subtitle {
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 20px;
+}
+
+.auth-btn {
+    width: 100%;
+    margin-top: 6px;
+}
+
+.auth-hint {
+    margin-top: 15px;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    text-align: center;
+}
+
+.auth-card label {
+    color: #fff;
+}
+
+.auth-card input {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(255, 255, 255, 0.6);
+}
+
+@keyframes authCardFloat {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes authOrbFloat {
+    0%, 100% {
+        transform: translateY(0) translateX(0);
+    }
+    50% {
+        transform: translateY(-18px) translateX(12px);
+    }
+}
+
+
