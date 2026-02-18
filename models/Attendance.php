@@ -8,7 +8,12 @@ class Attendance {
     }
 
     public function mark($student_id, $date, $status, $remarks = '') {
-        $query = "INSERT INTO " . $this->table . " (student_id, date, status, remarks) VALUES (:student_id, :date, :status, :remarks) ON DUPLICATE KEY UPDATE status = :status, remarks = :remarks";
+        $query = "INSERT INTO " . $this->table . " (student_id, date, status, remarks, grade_level, section)
+                  SELECT cs.id, :date, :status, :remarks, c.grade_level, c.section
+                  FROM class_students cs
+                  JOIN classes c ON cs.class_id = c.id
+                  WHERE cs.id = :student_id
+                  ON DUPLICATE KEY UPDATE status = :status, remarks = :remarks, grade_level = VALUES(grade_level), section = VALUES(section)";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":student_id", $student_id);
         $stmt->bindParam(":date", $date);

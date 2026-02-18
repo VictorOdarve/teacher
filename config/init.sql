@@ -43,9 +43,21 @@ CREATE TABLE IF NOT EXISTS class_students (
     middle_name VARCHAR(100),
     gender ENUM('Male', 'Female', 'Other') NOT NULL,
     student_id VARCHAR(50) NOT NULL,
+    grade_level VARCHAR(50) NULL,
+    section VARCHAR(50) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE
 );
+
+ALTER TABLE class_students
+    ADD COLUMN IF NOT EXISTS grade_level VARCHAR(50) NULL AFTER student_id,
+    ADD COLUMN IF NOT EXISTS section VARCHAR(50) NULL AFTER grade_level;
+
+UPDATE class_students cs
+JOIN classes c ON cs.class_id = c.id
+SET cs.grade_level = c.grade_level,
+    cs.section = c.section
+WHERE cs.grade_level IS NULL OR cs.section IS NULL;
 
 CREATE TABLE IF NOT EXISTS class_activities (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -63,10 +75,23 @@ CREATE TABLE IF NOT EXISTS attendance (
     date DATE NOT NULL,
     status ENUM('present', 'late', 'excused', 'absent') NOT NULL,
     remarks TEXT,
+    grade_level VARCHAR(50) NOT NULL,
+    section VARCHAR(50) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (student_id) REFERENCES class_students(id) ON DELETE CASCADE,
     UNIQUE KEY unique_attendance (student_id, date)
 );
+
+ALTER TABLE attendance
+    ADD COLUMN IF NOT EXISTS grade_level VARCHAR(50) NULL AFTER remarks,
+    ADD COLUMN IF NOT EXISTS section VARCHAR(50) NULL AFTER grade_level;
+
+UPDATE attendance a
+JOIN class_students cs ON a.student_id = cs.id
+JOIN classes c ON cs.class_id = c.id
+SET a.grade_level = c.grade_level,
+    a.section = c.section
+WHERE a.grade_level IS NULL OR a.section IS NULL;
 
 CREATE TABLE IF NOT EXISTS grades (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -96,7 +121,7 @@ CREATE TABLE IF NOT EXISTS final_grades (
 );
 
 -- Seed sample students: 15 students per class (and therefore per subject/class setup)
-INSERT INTO class_students (class_id, first_name, last_name, middle_name, gender, student_id)
+INSERT INTO class_students (class_id, first_name, last_name, middle_name, gender, student_id, grade_level, section)
 SELECT
     c.id,
     ELT(
@@ -115,7 +140,9 @@ SELECT
     ) AS last_name,
     NULL AS middle_name,
     CASE WHEN MOD(n.num, 2) = 0 THEN 'Female' ELSE 'Male' END AS gender,
-    CONCAT(REPLACE(c.subject_code, ' ', ''), '-', LPAD(c.id, 2, '0'), '-', LPAD(n.num, 2, '0')) AS student_id
+    CONCAT(REPLACE(c.subject_code, ' ', ''), '-', LPAD(c.id, 2, '0'), '-', LPAD(n.num, 2, '0')) AS student_id,
+    c.grade_level,
+    c.section
 FROM classes c
 JOIN (
     SELECT 1 AS num UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5

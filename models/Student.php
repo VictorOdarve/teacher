@@ -43,8 +43,10 @@ class Student {
             $last_name = implode(" ", $parts);
         }
 
-        $query = "INSERT INTO class_students (class_id, first_name, last_name, middle_name, gender, student_id)
-                  VALUES (:class_id, :first_name, :last_name, :middle_name, :gender, :student_id)";
+        $query = "INSERT INTO class_students (class_id, first_name, last_name, middle_name, gender, student_id, grade_level, section)
+                  SELECT c.id, :first_name, :last_name, :middle_name, :gender, :student_id, c.grade_level, c.section
+                  FROM classes c
+                  WHERE c.id = :class_id";
         $stmt = $this->conn->prepare($query);
         $default_class_id = $this->getDefaultClassId();
         if ($default_class_id === null) {
@@ -105,9 +107,14 @@ class Student {
             $last_name = implode(" ", $parts);
         }
 
-        $query = "UPDATE class_students
-                  SET student_id = :student_id, first_name = :first_name, last_name = :last_name
-                  WHERE id = :id";
+        $query = "UPDATE class_students cs
+                  JOIN classes c ON cs.class_id = c.id
+                  SET cs.student_id = :student_id,
+                      cs.first_name = :first_name,
+                      cs.last_name = :last_name,
+                      cs.grade_level = c.grade_level,
+                      cs.section = c.section
+                  WHERE cs.id = :id";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":id", $id);
         $stmt->bindParam(":student_id", $student_id);
