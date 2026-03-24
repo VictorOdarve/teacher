@@ -17,8 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bindParam(":end_time", $_POST['end_time']);
             $stmt->bindParam(":room", $_POST['room']);
             $result = $stmt->execute();
-            
-            header('Location: ../views/classes.php?msg=' . ($result ? 'schedule_added' : 'error'));
+
             exit;
         } catch (PDOException $e) {
             die("Error: " . $e->getMessage());

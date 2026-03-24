@@ -46,11 +46,12 @@ class Attendance {
         return $stmt;
     }
 
-    public function getReport($start_date, $end_date, $section = null, $subject = null) {
+    public function getReport($start_date, $end_date, $section = null, $subject = null, $grade_level = null) {
         $query = "SELECT cs.id, cs.student_id, CONCAT(cs.last_name, ', ', cs.first_name) as name,
                   SUM(CASE WHEN a.status = 'present' THEN 1 ELSE 0 END) as present_count,
                   SUM(CASE WHEN a.status = 'absent' THEN 1 ELSE 0 END) as absent_count,
-                  SUM(CASE WHEN a.status = 'late' THEN 1 ELSE 0 END) as late_count
+                  SUM(CASE WHEN a.status = 'late' THEN 1 ELSE 0 END) as late_count,
+                  SUM(CASE WHEN a.status = 'excused' THEN 1 ELSE 0 END) as excused_count
                   FROM class_students cs
                   LEFT JOIN " . $this->table . " a ON cs.id = a.student_id AND a.date BETWEEN :start_date AND :end_date
                   JOIN classes c ON cs.class_id = c.id";
@@ -60,6 +61,9 @@ class Attendance {
         }
         if ($subject) {
             $conditions[] = "c.subject = :subject";
+        }
+        if ($grade_level) {
+            $conditions[] = "c.grade_level = :grade_level";
         }
         if ($conditions) {
             $query .= " WHERE " . implode(" AND ", $conditions);
@@ -73,6 +77,9 @@ class Attendance {
         }
         if ($subject) {
             $stmt->bindParam(":subject", $subject);
+        }
+        if ($grade_level) {
+            $stmt->bindParam(":grade_level", $grade_level);
         }
         $stmt->execute();
         return $stmt;

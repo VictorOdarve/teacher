@@ -40,16 +40,55 @@ $query .= " ORDER BY a.date DESC, cs.last_name, cs.first_name";
 
 $stmt = $db->prepare($query);
 if ($date_filter) {
-    $stmt->bindParam(":date", $date_filter);
+    $stmt->bindParam(':date', $date_filter);
 }
 if ($grade_filter) {
-    $stmt->bindParam(":grade", $grade_filter);
+    $stmt->bindParam(':grade', $grade_filter);
 }
 if ($section_filter) {
-    $stmt->bindParam(":section", $section_filter);
+    $stmt->bindParam(':section', $section_filter);
 }
 $stmt->execute();
 $history = $stmt;
+
+// Compute overall stats for pie chart
+$stats_query = "SELECT 
+    SUM(CASE WHEN a.status = 'present' THEN 1 ELSE 0 END) as overall_present,
+    SUM(CASE WHEN a.status = 'absent' THEN 1 ELSE 0 END) as overall_absent,
+    SUM(CASE WHEN a.status = 'late' THEN 1 ELSE 0 END) as overall_late,
+    SUM(CASE WHEN a.status = 'excused' THEN 1 ELSE 0 END) as overall_excused
+    FROM attendance a 
+    JOIN class_students cs ON a.student_id = cs.id 
+    JOIN classes c ON cs.class_id = c.id 
+    WHERE 1=1";
+
+if ($date_filter) {
+    $stats_query .= " AND a.date = :date";
+}
+if ($grade_filter) {
+    $stats_query .= " AND c.grade_level = :grade";
+}
+if ($section_filter) {
+    $stats_query .= " AND c.section = :section";
+}
+
+$stats_stmt = $db->prepare($stats_query);
+if ($date_filter) {
+    $stats_stmt->bindParam(':date', $date_filter);
+}
+if ($grade_filter) {
+    $stats_stmt->bindParam(':grade', $grade_filter);
+}
+if ($section_filter) {
+    $stats_stmt->bindParam(':section', $section_filter);
+}
+$stats_stmt->execute();
+$stats_row = $stats_stmt->fetch(PDO::FETCH_ASSOC);
+$overall_present = (int)($stats_row['overall_present'] ?? 0);
+$overall_absent = (int)($stats_row['overall_absent'] ?? 0);
+$overall_late = (int)($stats_row['overall_late'] ?? 0);
+$overall_excused = (int)($stats_row['overall_excused'] ?? 0);
+$total_attendance = $overall_present + $overall_absent + $overall_late + $overall_excused;
 
 $page_title = "Attendance History";
 include '../includes/header.php';
@@ -90,6 +129,18 @@ include '../includes/nav.php';
 
     <button class="btn btn-primary" onclick="applyFilters()">Search</button>
     <button class="btn" onclick="clearFilters()">Clear Filters</button>
+
+    <!-- Attendance History Pie Chart -->
+    <div style="margin: 30px 0; text-align: center;">
+        <h3>Overall Attendance Summary<?php if($total_attendance > 0): ?> (Total Records: <?php echo $total_attendance; ?>)<?php endif; ?></h3>
+        <?php if($total_attendance > 0): ?>
+        <div style="position: relative; height: 300px; width: 100%; max-width: 500px; margin: 0 auto;">
+            <canvas id="historyPieChart"></canvas>
+        </div>
+        <?php else: ?>
+        <p style="color: #999; font-style: italic;">No attendance records to display chart.</p>
+        <?php endif; ?>
+    </div>
 
     <h2 style="margin-top: 30px;">Attendance Records</h2>
     <?php if ($history->rowCount() > 0): ?>
@@ -162,4 +213,46 @@ function clearFilters() {
 }
 </script>
 
+<!-- Chart.js CDN and Pie Chart -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const historyPieCtx = document.getElementById('historyPieChart')?.getContext('2d');
+const pieData = {
+    present: <?php echo $overall_present; ?>,
+    absent: <?php echo $overall_absent; ?>,
+    late: <?php echo $overall_late; ?>,
+    excused: <?php echo $overall_excused; ?>,
+    total: <?php echo $total_attendance; ?>
+};
+if (historyPieCtx && pieData.total > 0) {
+    new Chart(historyPieCtx, {
+        type: 'pie',
+        data: {
+            labels: ['Present', 'Absent', 'Late', 'Excused'],
+            datasets: [{
+                data: [pieData.present, pieData.absent, pieData.late, pieData.excused],
+                backgroundColor: [
+                    'rgba(75, 192, 192, 0.8)',
+                    'rgba(255, 99, 132, 0.8)',
+                    'rgba(255, 205, 86, 0.8)',
+                    'rgba(54, 162, 235, 0.8)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'right' },
+                title: { 
+                    display: true, 
+                    text: 'Attendance Distribution'
+                }
+            }
+        }
+    });
+}
+</script>
+
 <?php include '../includes/footer.php'; ?>
+

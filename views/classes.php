@@ -17,8 +17,37 @@ include '../includes/nav.php';
     <h1>My Classes</h1>
     
     <?php if (isset($_GET['msg'])): ?>
-        <div class="alert alert-<?php echo $_GET['msg'] === 'error' ? 'error' : 'success'; ?>">
-            <?php echo $_GET['msg'] === 'added' ? 'Class created successfully!' : 'An error occurred!'; ?>
+        <?php 
+        $msg_text = '';
+        if (strpos($_GET['msg'], 'imported_') === 0) {
+            $count = substr($_GET['msg'], 9);
+            $msg_text = "{$count} students imported successfully!";
+            $alert_class = 'success';
+        } elseif ($_GET['msg'] === 'student_added') {
+            $msg_text = 'Student added successfully!';
+            $alert_class = 'success';
+        } elseif ($_GET['msg'] === 'error_no_file') {
+            $msg_text = 'No file uploaded!';
+            $alert_class = 'error';
+        } elseif ($_GET['msg'] === 'error_file') {
+            $msg_text = 'Error reading file!';
+            $alert_class = 'error';
+        } elseif ($_GET['msg'] === 'error_class') {
+            $msg_text = 'Class not found!';
+            $alert_class = 'error';
+        } elseif ($_GET['msg'] === 'error_no_valid') {
+            $msg_text = 'No valid students found in file!';
+            $alert_class = 'error';
+        } elseif ($_GET['msg'] === 'schedule_added') {
+            $msg_text = 'Schedule added!';
+            $alert_class = 'success';
+        } else {
+            $msg_text = $_GET['msg'] === 'added' ? 'Class created successfully!' : 'An error occurred!';
+            $alert_class = $_GET['msg'] === 'error' ? 'error' : 'success';
+        }
+        ?>
+        <div class="alert alert-<?php echo $alert_class; ?>">
+            <?php echo htmlspecialchars($msg_text); ?>
         </div>
     <?php endif; ?>
     
@@ -109,7 +138,8 @@ include '../includes/nav.php';
     <div class="modal-content">
         <span class="modal-close" onclick="closeScheduleModal()">&times;</span>
         <h2>Add Schedule</h2>
-        <form action="../controllers/schedule_controller.php" method="POST">
+        <div id="scheduleSuccessMsg" style="display:none; color:green; margin-bottom:10px;">Schedule added! You can add another.</div>
+        <form id="scheduleForm" action="../controllers/schedule_controller.php" method="POST">
             <input type="hidden" name="action" value="create">
             <input type="hidden" name="class_id" id="modal_class_id">
             
@@ -142,8 +172,8 @@ include '../includes/nav.php';
                 <input type="text" name="room" placeholder="e.g., Room 101" required>
             </div>
             
-            <button type="submit" class="btn btn-success">Submit Schedule</button>
-            <button type="button" class="btn" onclick="closeScheduleModal()">Cancel</button>
+            <button type="button" class="btn btn-success" onclick="submitSchedule()">Add Schedule</button>
+            <button type="button" class="btn" onclick="closeScheduleModal()">Done</button>
         </form>
     </div>
 </div>
@@ -152,18 +182,18 @@ include '../includes/nav.php';
     <div class="modal-content">
         <span class="modal-close" onclick="closeStudentModal()">&times;</span>
         <h2>Add Student to Class</h2>
-        <form action="../controllers/class_student_controller.php" method="POST">
-            <input type="hidden" name="action" value="create">
+        <form action="../controllers/class_student_controller.php" method="POST" enctype="multipart/form-data">
             <input type="hidden" name="class_id" id="modal_student_class_id">
+
             
             <div class="form-group">
                 <label>First Name:</label>
-                <input type="text" name="first_name" required>
+                <input type="text" name="first_name">
             </div>
             
             <div class="form-group">
                 <label>Last Name:</label>
-                <input type="text" name="last_name" required>
+                <input type="text" name="last_name">
             </div>
             
             <div class="form-group">
@@ -173,7 +203,7 @@ include '../includes/nav.php';
 
             <div class="form-group">
                 <label>Gender:</label>
-                <select name="gender" required>
+                <select name="gender">
                     <option value="">Select Gender</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
@@ -183,23 +213,88 @@ include '../includes/nav.php';
 
             <div class="form-group">
                 <label>Student ID:</label>
-                <input type="text" name="student_id" required>
+                <input type="text" name="student_id">
+            </div>
+
+            <div class="form-group">
+                <label>CSV File for Bulk Import (optional):</label>
+                <input type="file" name="students_csv" accept=".csv">
+                <small>Columns: Student ID,First Name,Last Name,Middle Name,Gender (skip header row)</small>
             </div>
             
-            <button type="submit" class="btn btn-success">Add Student</button>
+            <button type="button" class="btn btn-primary" onclick="handleSingle()">Add Single Student</button>
+            <button type="button" id="importBtn" class="btn btn-success" onclick="handleImport()">Import Students</button>
             <button type="button" class="btn" onclick="closeStudentModal()">Cancel</button>
         </form>
     </div>
 </div>
 
 <script>
+function handleSingle() {
+    const formData = {
+        student_id: document.querySelector('#studentModal input[name="student_id"]').value.trim(),
+        first_name: document.querySelector('#studentModal input[name="first_name"]').value.trim(),
+        last_name: document.querySelector('#studentModal input[name="last_name"]').value.trim(),
+        gender: document.querySelector('#studentModal select[name="gender"]').value
+    };
+    
+    if (!formData.student_id || !formData.first_name || !formData.last_name || !formData.gender) {
+        alert('Fill Student ID, First Name, Last Name, and Gender for single add!');
+        return;
+    }
+    
+    // Submit form with action=create
+    const form = document.querySelector('#studentModal form');
+    const hiddenAction = document.createElement('input');
+    hiddenAction.type = 'hidden';
+    hiddenAction.name = 'action';
+    hiddenAction.value = 'create';
+    form.appendChild(hiddenAction);
+    form.submit();
+}
+
+function handleImport() {
+    const fileInput = document.querySelector('#studentModal input[type="file"]');
+    if (!fileInput.files || fileInput.files.length === 0) {
+        alert('Select CSV file first for bulk import!');
+        return;
+    }
+    // Submit form with action=import
+    const form = document.querySelector('#studentModal form');
+    const hiddenAction = document.createElement('input');
+    hiddenAction.type = 'hidden';
+    hiddenAction.name = 'action';
+    hiddenAction.value = 'import';
+    form.appendChild(hiddenAction);
+    form.submit();
+}
+</script>
+
+<script>
 function openScheduleModal(classId) {
+    document.getElementById('scheduleForm').reset();
     document.getElementById('modal_class_id').value = classId;
+    document.getElementById('scheduleSuccessMsg').style.display = 'none';
     document.getElementById('scheduleModal').style.display = 'block';
 }
 
 function closeScheduleModal() {
     document.getElementById('scheduleModal').style.display = 'none';
+    window.location.href = 'classes.php';
+}
+
+function submitSchedule() {
+    const form = document.getElementById('scheduleForm');
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+    const classId = document.getElementById('modal_class_id').value;
+    const data = new FormData(form);
+    fetch('../controllers/schedule_controller.php', { method: 'POST', body: data })
+        .then(response => response.text())
+        .then(() => {
+            form.reset();
+            document.getElementById('modal_class_id').value = classId;
+            document.getElementById('scheduleSuccessMsg').style.display = 'block';
+        });
 }
 
 function openStudentModal(classId) {

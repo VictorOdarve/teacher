@@ -146,9 +146,68 @@ include '../includes/nav.php';
                 <h3>Absent</h3>
                 <div class="number"><?php echo $attendance_summary['absent']; ?></div>
             </div>
+
         </div>
 
+        <!-- Attendance Chart -->
+        <h3 style="margin-top: 30px;">Attendance Summary Chart</h3>
+        <canvas id="attendanceChart" style="max-height: 250px; max-width: 100%;"></canvas>
+        
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+            const ctx = document.getElementById('attendanceChart').getContext('2d');
+            const attendanceData = <?php echo json_encode($attendance_summary); ?>;
+            
+            if (attendanceData.total > 0) {
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Present', 'Absent', 'Late', 'Excused'],
+                        datasets: [{
+                            label: 'Days',
+                            data: [attendanceData.present, attendanceData.absent, attendanceData.late, attendanceData.excused],
+                            backgroundColor: [
+                                'rgba(75, 192, 192, 0.8)',
+                                'rgba(255, 99, 132, 0.8)',
+                                'rgba(255, 205, 86, 0.8)',
+                                'rgba(54, 162, 235, 0.8)'
+                            ],
+                            borderColor: [
+                                'rgba(75, 192, 192, 1)',
+                                'rgba(255, 99, 132, 1)',
+                                'rgba(255, 205, 86, 1)',
+                                'rgba(54, 162, 235, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { stepSize: 1 },
+                                title: { display: true, text: 'Days' }
+                            },
+                            x: { title: { display: true, text: 'Status' } }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            title: { 
+                                display: true, 
+                                text: 'Attendance Distribution (Total: ' + attendanceData.total + ' days)'
+                            }
+                        }
+                    }
+                });
+            } else {
+                ctx.font = '20px Arial';
+                ctx.fillText('No attendance data', 50, 200);
+            }
+        </script>
+
         <h2 style="margin-top: 30px;">Recent Attendance</h2>
+
         <?php if (count($attendance_records) > 0): ?>
             <table>
                 <thead>
@@ -171,6 +230,112 @@ include '../includes/nav.php';
         <?php endif; ?>
 
         <h2 style="margin-top: 30px;">Grades</h2>
+        <?php 
+        // Compute grade type averages per quarter for multi-line chart (from student_view.php)
+        $quarters = ['1', '2', '3', '4'];
+        $ww_data = [];
+        $pt_data = [];
+        $as_data = [];
+        
+        foreach ($quarters as $q) {
+            $ww_avg = 0;
+            $pt_avg = 0;
+            $as_avg = 0;
+            $has_data = false;
+            
+            foreach ($grades_records as $record) {
+                if ($record['quarter'] == $q) {
+                    $scores = decodeScoreArray($record['scores']);
+                    $totals = decodeScoreArray($record['total_score']);
+                    $scores_sum = array_sum($scores);
+                    $totals_sum = array_sum($totals);
+                    if ($totals_sum > 0) {
+                        $percent = ($scores_sum / $totals_sum) * 100;
+                        switch ($record['grade_type']) {
+                            case 'ww':
+                                $ww_avg = $percent;
+                                break;
+                            case 'pt':
+                                $pt_avg = $percent;
+                                break;
+                            case 'as':
+                                $as_avg = $percent;
+                                break;
+                        }
+                        $has_data = true;
+                    }
+                }
+            }
+            $ww_data[$q] = $has_data ? round($ww_avg, 1) : 0;
+            $pt_data[$q] = $has_data ? round($pt_avg, 1) : 0;
+            $as_data[$q] = $has_data ? round($as_avg, 1) : 0;
+        }
+        
+        $grades_data = [
+            'labels' => $quarters,
+            'ww' => array_values($ww_data),
+            'pt' => array_values($pt_data),
+            'as' => array_values($as_data)
+        ];
+        ?>
+
+        <!-- Grades Performance Line Chart -->
+        <h3 style="margin-top: 30px;">Grades Performance Chart</h3>
+        <canvas id="gradesChart" style="max-height: 250px; max-width: 100%; margin-bottom: 20px;"></canvas>
+        <script>
+            const gradesCtx = document.getElementById('gradesChart')?.getContext('2d');
+            const gradesData = <?php echo json_encode($grades_data); ?>;
+            if (gradesCtx) {
+                new Chart(gradesCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Q' + gradesData.labels[0], 'Q' + gradesData.labels[1], 'Q' + gradesData.labels[2], 'Q' + gradesData.labels[3]],
+                        datasets: [
+                            {
+                                label: 'Written Works',
+                                data: gradesData.ww,
+                                borderColor: 'rgba(75, 192, 192, 1)',
+                                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                tension: 0.4,
+                                fill: false
+                            },
+                            {
+                                label: 'Performance Tasks',
+                                data: gradesData.pt,
+                                borderColor: 'rgba(255, 99, 132, 1)',
+                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                tension: 0.4,
+                                fill: false
+                            },
+                            {
+                                label: 'Assessment',
+                                data: gradesData.as,
+                                borderColor: 'rgba(255, 205, 86, 1)',
+                                backgroundColor: 'rgba(255, 205, 86, 0.2)',
+                                tension: 0.4,
+                                fill: false
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                title: { display: true, text: 'Percentage (%)' }
+                            },
+                            x: { title: { display: true, text: 'Quarter' } }
+                        },
+                        plugins: {
+                            legend: { display: true, position: 'top' },
+                            title: { display: true, text: 'Grades Performance by Type (WW, PT, AS)' }
+                        }
+                    }
+                });
+            }
+        </script>
+
         <?php if (count($grades_records) > 0): ?>
             <table>
                 <thead>
@@ -183,6 +348,7 @@ include '../includes/nav.php';
                 </thead>
                 <tbody>
                     <?php foreach ($grades_records as $grade): ?>
+
                         <?php
                         $scores = decodeScoreArray($grade['scores']);
                         $totals = decodeScoreArray($grade['total_score']);

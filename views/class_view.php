@@ -6,6 +6,8 @@ $db = $database->getConnection();
 
 $class_id = isset($_GET['class_id']) ? $_GET['class_id'] : 0;
 
+
+
 // Get class info
 $query = "SELECT * FROM classes WHERE id = :id";
 $stmt = $db->prepare($query);

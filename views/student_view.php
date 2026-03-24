@@ -46,6 +46,37 @@ include '../includes/nav.php';
         </div>
 
         <h2>Attendance Records</h2>
+<?php 
+        // Compute attendance stats
+        $present_count = 0;
+        $absent_count = 0;
+        $late_count = 0;
+        $excused_count = 0;
+        foreach ($attendance_records as $record) {
+            switch ($record['status']) {
+                case 'present':
+                    $present_count++;
+                    break;
+                case 'absent':
+                    $absent_count++;
+                    break;
+                case 'late':
+                    $late_count++;
+                    break;
+                case 'excused':
+                    $excused_count++;
+                    break;
+            }
+        }
+        $total_days = count($attendance_records);
+        $attendance_stats = [
+            'present' => $present_count,
+            'absent' => $absent_count,
+            'late' => $late_count,
+            'excused' => $excused_count,
+            'total' => $total_days
+        ];
+        ?>
         <?php if (count($attendance_records) > 0): ?>
             <table>
                 <thead>
@@ -63,11 +94,189 @@ include '../includes/nav.php';
                     <?php endforeach; ?>
                 </tbody>
             </table>
+
+            <!-- Attendance Chart -->
+            <h3 style="margin-top: 30px;">Attendance Summary Chart</h3>
+<canvas id="attendanceChart" style="max-height: 250px; max-width: 100%;"></canvas>
+            
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <script>
+                const ctx = document.getElementById('attendanceChart').getContext('2d');
+                const attendanceData = <?php echo json_encode($attendance_stats); ?>;
+                
+                if (attendanceData.total > 0) {
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Present', 'Absent', 'Late', 'Excused'],
+                            datasets: [{
+                                label: 'Days',
+                                data: [attendanceData.present, attendanceData.absent, attendanceData.late, attendanceData.excused],
+                                backgroundColor: [
+                                    'rgba(75, 192, 192, 0.8)',   // Green for present
+                                    'rgba(255, 99, 132, 0.8)',   // Red for absent
+                                    'rgba(255, 205, 86, 0.8)',   // Yellow for late
+                                    'rgba(54, 162, 235, 0.8)'    // Blue for excused
+                                ],
+                                borderColor: [
+                                    'rgba(75, 192, 192, 1)',
+                                    'rgba(255, 99, 132, 1)',
+                                    'rgba(255, 205, 86, 1)',
+                                    'rgba(54, 162, 235, 1)'
+                                ],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    max: 5,
+                                    ticks: {
+                                        stepSize: 1
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'Days',
+                                        font: {
+                                            size: 12
+                                        }
+                                    }
+                                },
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Status',
+                                        font: {
+                                            size: 12
+                                        }
+                                    }
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false,
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Attendance Distribution (Total: ' + attendanceData.total + ' days)'
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    ctx.font = '20px Arial';
+                    ctx.fillText('No attendance data', 50, 200);
+                }
+            </script>
         <?php else: ?>
             <p>No attendance records found.</p>
         <?php endif; ?>
 
-        <h2 style="margin-top: 40px;">Grades</h2>
+        <!-- Grades Performance Line Chart -->
+        <h2 style="margin-top: 40px;">Grades Performance</h2>
+        <?php
+        // Compute grade type averages per quarter for multi-line chart
+        $quarters = ['1', '2', '3', '4'];
+        $ww_data = [];
+        $pt_data = [];
+        $as_data = [];
+        
+        foreach ($quarters as $q) {
+            $ww_avg = 0;
+            $pt_avg = 0;
+            $as_avg = 0;
+            $has_data = false;
+            
+            foreach ($grades_records as $record) {
+                if ($record['quarter'] == $q) {
+                    $scores_sum = array_sum(json_decode($record['scores'], true));
+                    $totals_sum = $record['total_score'] ? array_sum(json_decode($record['total_score'], true)) : 0;
+                    if ($totals_sum > 0) {
+                        $percent = ($scores_sum / $totals_sum) * 100;
+                        switch ($record['grade_type']) {
+                            case 'ww':
+                                $ww_avg = $percent;
+                                break;
+                            case 'pt':
+                                $pt_avg = $percent;
+                                break;
+                            case 'as':
+                                $as_avg = $percent;
+                                break;
+                        }
+                        $has_data = true;
+                    }
+                }
+            }
+            $ww_data[$q] = $has_data ? round($ww_avg, 1) : 0;
+            $pt_data[$q] = $has_data ? round($pt_avg, 1) : 0;
+            $as_data[$q] = $has_data ? round($as_avg, 1) : 0;
+        }
+        
+        $grades_data = [
+            'labels' => $quarters,
+            'ww' => array_values($ww_data),
+            'pt' => array_values($pt_data),
+            'as' => array_values($as_data)
+        ];
+        ?>
+        <canvas id="gradesChart" style="max-height: 250px; max-width: 100%; margin-bottom: 20px;"></canvas>
+        <script>
+            const gradesCtx = document.getElementById('gradesChart')?.getContext('2d');
+            const gradesData = <?php echo json_encode($grades_data); ?>;
+            if (gradesCtx) {
+                new Chart(gradesCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Q' + gradesData.labels[0], 'Q' + gradesData.labels[1], 'Q' + gradesData.labels[2], 'Q' + gradesData.labels[3]],
+                        datasets: [
+                            {
+                                label: 'Written Works',
+                                data: gradesData.ww,
+                                borderColor: 'rgba(75, 192, 192, 1)',
+                                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                tension: 0.4,
+                                fill: false
+                            },
+                            {
+                                label: 'Performance Tasks',
+                                data: gradesData.pt,
+                                borderColor: 'rgba(255, 99, 132, 1)',
+                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                tension: 0.4,
+                                fill: false
+                            },
+                            {
+                                label: 'Assessment',
+                                data: gradesData.as,
+                                borderColor: 'rgba(255, 205, 86, 1)',
+                                backgroundColor: 'rgba(255, 205, 86, 0.2)',
+                                tension: 0.4,
+                                fill: false
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                title: { display: true, text: 'Percentage (%)' }
+                            },
+                            x: { title: { display: true, text: 'Quarter' } }
+                        },
+                        plugins: {
+                            legend: { display: true, position: 'top' },
+                            title: { display: true, text: 'Grades Performance by Type (WW, PT, AS)' }
+                        }
+                    }
+                });
+            }
+        </script>
+
         <?php if (count($grades_records) > 0): ?>
             <?php
             // Group grades by quarter

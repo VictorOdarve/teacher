@@ -99,9 +99,4 @@ function finalizeGrade() {
 function editGrade() {
     // Convert the quarter grade cells to inputs for editing
     const quarters = ['q1-grade', 'q2-grade', 'q3-grade', 'q4-grade'];
-    quarters.forEach(id => {
-        const cell = document.getElementById(id);
-        const currentValue = cell.textContent;
-        cell.innerHTML = `<input type="number" step="0.01" value="${currentValue}" style="width: 100%; text-align: center;">`;
-    });
-}
+    quarters.forEach(id => {\n        const cell = document.getElementById(id);\n        const currentValue = cell.textContent;\n        cell.innerHTML = `<input type="number" step="0.01" value="${currentValue}" style="width: 100%; text-align: center;">`;\n    });\n}\n\n\nfunction toggleSidebar() {\n    const sidebar = document.querySelector('.sidebar');\n    const toggle = document.getElementById('sidebar-toggle');\n    sidebar.classList.toggle('sidebar-hidden');\n    toggle.classList.toggle('active');\n}

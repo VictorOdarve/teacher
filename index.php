@@ -11,8 +11,10 @@ $student = new Student($db);
 $attendance = new Attendance($db);
 $class_model = new ClassModel($db);
 
-$total_students = $student->getAll()->rowCount();
-$total_classes = $class_model->getAll()->rowCount();
+$total_students_row = $db->query("SELECT COUNT(*) as count FROM class_students")->fetch(PDO::FETCH_ASSOC);
+$total_students = $total_students_row['count'];
+$total_classes_row = $db->query("SELECT COUNT(*) as count FROM classes")->fetch(PDO::FETCH_ASSOC);
+$total_classes = $total_classes_row['count'];
 $today = date('Y-m-d');
 $today_attendance = $attendance->getByDate($today)->rowCount();
 
@@ -42,7 +44,7 @@ include 'includes/nav.php';
             <div class="number"><?php echo $total_classes; ?></div>
         </div>
         <div class="stat-card">
-            <h3>Today's Attendance</h3>
+            <h3>Today's Present</h3>
             <div class="number"><?php echo $today_attendance; ?></div>
         </div>
         <div class="stat-card">
