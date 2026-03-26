@@ -36,12 +36,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $stmt->bindParam(':rounded_final_grade2', $rounded_final_grade);
     $stmt->bindParam(':remarks2', $remarks);
 
-    if ($stmt->execute()) {
+if ($stmt->execute()) {
         echo json_encode(['success' => true]);
     } else {
-        echo json_encode(['success' => false, 'error' => $stmt->errorInfo()]);
+        echo json_encode(['success' => false, 'error' => implode(' ', $stmt->errorInfo())]);
     }
 } else {
-    echo json_encode(['success' => false, 'error' => 'Invalid request']);
+    echo json_encode(['success' => false, 'error' => 'Invalid request - missing action=finalize']);
 }
 ?>
+

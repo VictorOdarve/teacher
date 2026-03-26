@@ -363,7 +363,7 @@ include '../includes/nav.php';
 
         <div style="margin-top: 20px;">
             <a href="students.php" class="btn">Back to Students</a>
-            <button class="btn" style="float: right;" onclick="generateFinalGrade()">Generate Final Grade</button>
+<button class="btn" style="float: right;" onclick="generateFinalGrade()">Generate Final Grade (Auto-computes quarters)</button>
         </div>
 
         <!-- Final Grade Modal -->
@@ -407,6 +407,45 @@ include '../includes/nav.php';
                 <button style="position: absolute; top: 10px; right: 10px;" onclick="closeModal()">X</button>
             </div>
         </div>
+
+        <script>
+        function calculateAverage(quarter) {
+            // Find the Calculate button for this quarter
+            const button = document.querySelector('button[onclick="calculateAverage(' + quarter + ')"]');
+            if (!button) {
+                document.getElementById('quarter-grade-' + quarter).textContent = 'No data';
+                return;
+            }
+
+            // Find WW row (has the button), PT/AS are next siblings
+            const wwRow = button.closest('tr');
+            const ptRow = wwRow.nextElementSibling;
+            const asRow = ptRow ? ptRow.nextElementSibling : null;
+
+            if (!ptRow || !asRow) {
+                document.getElementById('quarter-grade-' + quarter).textContent = 'Incomplete rows';
+                return;
+            }
+
+            // Extract %: col 6 (1-based nth-child(6)) for WW (has rowspan Actions col), col 5 for PT/AS
+            const wwPctCell = wwRow.querySelector('td:nth-child(6)');
+            const ptPctCell = ptRow.querySelector('td:nth-child(5)');
+            const asPctCell = asRow.querySelector('td:nth-child(5)');
+
+            const wwPct = wwPctCell ? parseFloat(wwPctCell.textContent.replace('%', '').trim()) || 0 : 0;
+            const ptPct = ptPctCell ? parseFloat(ptPctCell.textContent.replace('%', '').trim()) || 0 : 0;
+            const asPct = asPctCell ? parseFloat(asPctCell.textContent.replace('%', '').trim()) || 0 : 0;
+
+            // Weighted average
+            const quarterGrade = Math.round(((wwPct * 0.3) + (ptPct * 0.5) + (asPct * 0.2)) * 10) / 10;
+
+            // Display with color (passing >=75 green)
+            const gradeDiv = document.getElementById('quarter-grade-' + quarter);
+            const color = quarterGrade >= 75 ? 'green' : 'red';
+            gradeDiv.innerHTML = `<span style="color: ${color}; font-size: 18px; font-weight: bold;">Grade: ${quarterGrade}%</span>`;
+            gradeDiv.textContent = `Grade: ${quarterGrade.toFixed(1)}`; // Plain text for parsing
+        }
+        </script>
     <?php else: ?>
         <p>Student not found.</p>
         <a href="students.php" class="btn">Back to Students</a>
