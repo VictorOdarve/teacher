@@ -73,12 +73,12 @@ switch ($action) {
         foreach ($labeled_h as $d) {
             $z    = $wh[0]*$d['feat'][0] + $wh[1]*$d['feat'][1];
             $prob = round($sigmoid_h($z) * 100, 1);
-            $predicted = $prob >= 50 ? 'Yes' : 'No';
             $grade = $d['row']['final_grade'] !== null ? intval($d['row']['final_grade']) : -1;
             $tier = '';
             if ($grade >= 98)      $tier = 'With Highest Honors';
             elseif ($grade >= 95)  $tier = 'With High Honors';
             elseif ($grade >= 90)  $tier = 'With Honors';
+            $predicted = $tier !== '' ? 'Yes' : 'No';
             $result_h[] = array_merge($d['row'], [
                 'predicted'   => $predicted,
                 'probability' => $prob,

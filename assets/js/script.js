@@ -153,16 +153,6 @@ function finalizeGrade() {
     });
 }
 
-function editGrade() {
-    // Convert the quarter grade cells to inputs for editing
-    const quarters = ['q1-grade', 'q2-grade', 'q3-grade', 'q4-grade'];
-    quarters.forEach(id => {
-        const cell = document.getElementById(id);
-        const currentValue = cell.textContent;
-        cell.innerHTML = `<input type="number" step="0.01" value="${currentValue}" style="width: 100%; text-align: center;">`;
-    });
-}
-
 function toggleSidebar() {
     const sidebar = document.querySelector('.sidebar');
     const toggle = document.getElementById('sidebar-toggle');

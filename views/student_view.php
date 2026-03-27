@@ -400,9 +400,7 @@ include '../includes/nav.php';
                     <strong>Remarks:</strong> <span id="remarks">-</span>
                 </div>
                 <div style="text-align: center; margin-top: 20px;">
-                    <button class="btn" onclick="computeFinalGrade()">Compute Final Grade</button>
                     <button class="btn" onclick="finalizeGrade()">Finalize</button>
-                    <button class="btn" onclick="editGrade()">Edit</button>
                 </div>
                 <button style="position: absolute; top: 10px; right: 10px;" onclick="closeModal()">X</button>
             </div>

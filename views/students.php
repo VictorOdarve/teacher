@@ -77,13 +77,20 @@ include '../includes/nav.php';
                 <td><?php echo htmlspecialchars($row['section']); ?></td>
                 <td>
                     <button class="btn btn-primary btn-sm" onclick="viewStudent(<?php echo $row['id']; ?>)">View</button>
-                    <button class="btn btn-sm" onclick="editStudent(<?php echo $row['id']; ?>)">Edit</button>
+                    <button class="btn btn-sm" onclick="deleteStudent(<?php echo $row['id']; ?>, <?php echo $row['class_id']; ?>)">Delete</button>
                 </td>
             </tr>
             <?php endwhile; ?>
         </tbody>
     </table>
 </div>
+
+<form id="delete-student-form" method="POST" action="../controllers/class_student_controller.php" style="display: none;">
+    <input type="hidden" name="action" value="delete">
+    <input type="hidden" name="id" id="delete-student-id">
+    <input type="hidden" name="class_id" id="delete-student-class-id">
+    <input type="hidden" name="redirect_to" value="../views/students.php?msg=deleted">
+</form>
 
 <script>
 function filterStudents() {
@@ -113,9 +120,14 @@ function viewStudent(id) {
     window.location.href = 'student_view.php?id=' + id;
 }
 
-function editStudent(id) {
-    alert('Edit student ID: ' + id);
-    // Add edit functionality here
+function deleteStudent(id, classId) {
+    if (!confirm('Delete this student from the list?')) {
+        return;
+    }
+
+    document.getElementById('delete-student-id').value = id;
+    document.getElementById('delete-student-class-id').value = classId;
+    document.getElementById('delete-student-form').submit();
 }
 
 document.getElementById('name_search').addEventListener('keyup', filterStudents);

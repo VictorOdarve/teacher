@@ -152,8 +152,12 @@ $db = $database->getConnection();
             $stmt = $db->prepare($query);
             $stmt->bindParam(":id", $_POST['id']);
             $result = $stmt->execute();
-            
-            header('Location: ../views/edit_class.php?class_id=' . $_POST['class_id'] . '&msg=' . ($result ? 'deleted' : 'error'));
+
+            if (!empty($_POST['redirect_to'])) {
+                header('Location: ' . $_POST['redirect_to']);
+            } else {
+                header('Location: ../views/edit_class.php?class_id=' . $_POST['class_id'] . '&msg=' . ($result ? 'deleted' : 'error'));
+            }
             exit;
         } catch (PDOException $e) {
             die("Error: " . $e->getMessage());
